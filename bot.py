@@ -173,7 +173,7 @@ async def check_new_versions(app):
         await asyncio.sleep(3600)  # проверка каждый час
 
 # Получение токена из переменной окружения
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TOKEN = os.environ.get("8483656371:AAH0O3xW7CJbLw3uiAWQJssd6P4MKuEjM_0")
 
 # Запуск бота
 app = ApplicationBuilder().token(TOKEN).build()
@@ -186,4 +186,5 @@ async def main():
     await app.run_polling()
 
 asyncio.run(main())
+
 
