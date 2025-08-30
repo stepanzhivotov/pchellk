@@ -1,3 +1,4 @@
+import os
 import json
 import asyncio
 from datetime import datetime
@@ -23,7 +24,7 @@ def save_users(users):
     with open(USERS_FILE, "w") as f:
         json.dump(users, f)
 
-# Список поддерживаемых устройств
+# Список устройств
 SUPPORTED_DEVICES = {
     "iPhone 11": "iPhone12,1",
     "iPhone 11 Pro": "iPhone12,3",
@@ -55,7 +56,6 @@ def get_ios_versions(device_identifier, version_type="signed"):
     data = response.json()
     
     versions = []
-
     for fw in data["firmwares"]:
         if version_type == "signed" and fw["signed"]:
             versions.append(fw)
@@ -63,10 +63,9 @@ def get_ios_versions(device_identifier, version_type="signed"):
             versions.append(fw)
         elif version_type == "beta" and fw.get("beta", False):
             versions.append(fw)
-
     return versions
 
-# Создание изображения версии
+# Создание картинки версии
 def create_version_image(version_type, version_number):
     width, height = 600, 300
     bg_colors = {"signed": (100, 200, 100), "unsigned": (200, 100, 100), "beta": (100, 100, 200)}
@@ -74,7 +73,6 @@ def create_version_image(version_type, version_number):
 
     img = Image.new("RGB", (width, height), color=bg_colors.get(version_type, (200,200,200)))
     draw = ImageDraw.Draw(img)
-
     try:
         font = ImageFont.truetype("arial.ttf", 30)
     except:
@@ -150,7 +148,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "back|devices":
         await query.edit_message_text("Выберите устройство:", reply_markup=get_device_keyboard())
 
-# Функция проверки новых версий и уведомления пользователей
+# Фоновая проверка новых версий
 async def check_new_versions(app):
     while True:
         users = load_users()
@@ -163,7 +161,6 @@ async def check_new_versions(app):
             if versions:
                 latest_version = versions[0]["version"]
                 if latest_version != last_notified:
-                    # Обновляем последний уведомлённый номер
                     users[user_id]["last_notified"] = latest_version
                     save_users(users)
 
@@ -173,16 +170,20 @@ async def check_new_versions(app):
                     image = create_version_image("signed", latest_version)
                     caption = f"Новая актуальная версия для {device_name}!\nВерсия: {latest_version}\nСтатус: Актуальная\nТип: Стабильная\nДата выхода: {release_date}\nОписание: {desc}"
                     await app.bot.send_photo(chat_id=int(user_id), photo=image, caption=caption)
-        await asyncio.sleep(3600)  # проверять каждый час
+        await asyncio.sleep(3600)  # проверка каждый час
+
+# Получение токена из переменной окружения
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 # Запуск бота
-app = ApplicationBuilder().token("ТВОЙ_ТОКЕН_БОТА").build()
+app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button_callback))
 
-# Запуск фоновой задачи
+# Фоновая задача
 async def main():
     asyncio.create_task(check_new_versions(app))
     await app.run_polling()
 
 asyncio.run(main())
+
